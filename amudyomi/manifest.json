@@ -1,0 +1,31 @@
+{
+  "name": "Amud Yomi - Sanhedrin",
+  "short_name": "Amud Yomi",
+  "start_url": "https://amudyomitorah.netlify.app/",
+  "scope": "https://amudyomitorah.netlify.app/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "https://rabmeireliyahu.github.io/charts/amudyomi/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://rabmeireliyahu.github.io/charts/amudyomi/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://rabmeireliyahu.github.io/charts/amudyomi/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
