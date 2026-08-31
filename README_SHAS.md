@@ -12,7 +12,8 @@ pon `<div id="otzar-shas"></div>` donde quieras y ahí se pinta (sin botón flot
 También: `OtzarShas.abrir()` / `OtzarShas.cerrar()` para engancharlo a tu propio menú.
 
 ## Qué hace
-- Lista las masejtot del Jajam Moshé Shawat (catálogo vivo: `shawat_shas.json`, hoy 1,724 shiurim / 23 masejtot).
+- Lista las 37 masejtot del Shas (catálogo vivo: `shas_completo.json`). Por daf: Jabrutouch (ES, todo el Shas),
+  Jajam Shawat (ES, 1,724), R' Eli Stefansky (EN), Rav Wasserman (HE, Spotify), PDF de la Guemará y tablita.
 - Al entrar a una masejta: cuadrícula de dafim (ב, ג, ד… con número). 📄 = ese daf tiene tablita.
 - Al entrar a un daf: reproductor (mp3 directo de Archive.org), duración, botón **Tablita del daf**
   (PDF de R' Eli Stefansky desde `charts/<masejta>/<daf>.pdf`), botón **Descargar** para oír sin
