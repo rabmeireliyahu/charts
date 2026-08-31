@@ -1,6 +1,6 @@
 /* otzar_shas.js — Otzar HaTorah · Navegador del Shas para Amud Yomi
-   Muestra TODAS las masejtot del Jajam Moshé Shawat (catálogo vivo de GitHub),
-   con reproductor, tablita (PDF de R' Eli Stefansky) y descarga sin internet.
+   Muestra TODO el Shas: Jabrutouch y Jajam Shawat (ES), R' Eli Stefansky (EN),
+   Rav Wasserman (HE), PDF de la Guemará y tablitas. Catálogo vivo: shas_completo.json.
    Integración (una línea, antes de </body>):
      <script src="https://rabmeireliyahu.github.io/charts/descargas_offline.js"></script>
      <script src="https://rabmeireliyahu.github.io/charts/otzar_shas.js"></script>
@@ -9,7 +9,7 @@
 */
 (function () {
   const BASE = 'https://rabmeireliyahu.github.io/charts/';
-  const CAT = BASE + 'shawat_shas.json', TAB = BASE + 'shas_tablitas.json';
+  const CAT = BASE + 'shas_completo.json';
   const EN = { 'Sanhedrín':'Sanhedrin','Makot':'Makos','Shevuot':'Shevuos','Avoda Zara':'Avodah Zarah','Horayot':'Horayos',
     'Zebajim':'Zevachim','Menajot':'Menachos','Julín':'Chulin','Bava Batra':'Bava Basra','Bava Metzia':'Bava Metzia',
     'Bava Kama':'Bava Kama','Kidushin':'Kidushin','Guitín':'Gitin','Sota':'Sotah','Nazir':'Nazir','Nedarim':'Nedarim',
@@ -47,20 +47,19 @@
   .oz-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .oz-btn,.otzar-descarga{background:#0f2a4a;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;text-decoration:none}
   .oz-btn.sec{background:#e9eef5;color:#0f2a4a}.oz-nav{display:flex;gap:8px;padding:8px 12px}.oz-nav button{flex:1}
-  .oz-msg{padding:14px;color:#5b6b7f;text-align:center}`;
+  .oz-msg{padding:14px;color:#5b6b7f;text-align:center}
+  .oz-fuente{border-top:1px solid #e6ecf3;padding:10px 0}.oz-et{font-weight:600;color:#0f2a4a;font-size:14px}`;
 
   let cat = null, tab = null, root = null, estado = { mas: null, daf: null };
 
   async function datos() {
     if (cat) return;
-    const [c, t] = await Promise.all([fetch(CAT).then(r => r.json()), fetch(TAB).then(r => r.json()).catch(() => ({}))]);
-    cat = c; tab = t || {};
+    const c = await fetch(CAT, { cache: 'no-cache' }).then(r => r.json());
+    cat = c;
   }
-  function tablitaDe(mas, daf) {
-    const en = EN[mas] || mas;
-    const lista = tab[en] || [];
-    return lista.indexOf(daf) >= 0 ? (BASE + slug(en) + '/' + daf + '.pdf') : null;
-  }
+  const dafObj = (m, d) => (cat.masejtot[m].dafim || {})[String(d)] || {};
+  function tablitaDe(mas, daf) { return dafObj(mas, daf).tablita || null; }
+  function cuantas(m) { return Object.keys(cat.masejtot[m].dafim || {}).length; }
   function h(tag, attrs, ...kids) {
     const e = document.createElement(tag);
     for (const k in (attrs || {})) { if (k === 'on') { for (const ev in attrs.on) e.addEventListener(ev, attrs.on[ev]); } else if (k === 'html') e.innerHTML = attrs[k]; else e.setAttribute(k, attrs[k]); }
@@ -70,17 +69,20 @@
 
   function vistaMasejtot(filtro) {
     const grid = h('div', { class: 'oz-grid' });
-    const nombres = Object.keys(cat.masejtot).sort((a, b) => ORDEN.indexOf(a) - ORDEN.indexOf(b));
+    const nombres = (cat.orden || Object.keys(cat.masejtot)).filter(m => cat.masejtot[m]);
     for (const m of nombres) {
-      const dafs = Object.keys(cat.masejtot[m]);
-      if (filtro && !(m + ' ' + (HE[m] || '')).toLowerCase().includes(filtro)) continue;
+      const dafs = cat.masejtot[m].dafim || {};
+      if (filtro && !(m + ' ' + (cat.masejtot[m].he || '')).toLowerCase().includes(filtro)) continue;
+      let sh = 0, st = 0, ws = 0, tb = 0;
+      for (const k in dafs) { const o = dafs[k]; if (o.shawat) sh++; if (o.stefansky) st++; if (o.wasserman) ws++; if (o.tablita) tb++; }
+      const etiq = ['🇲🇽 ' + Object.keys(dafs).length] .concat(sh ? ['🎙 ' + sh] : [], st ? ['🇺🇸 ' + st] : [], ws ? ['🇮🇱 ' + ws] : [], tb ? ['📄 ' + tb] : []).join('  ');
       grid.appendChild(h('div', { class: 'oz-mas', on: { click: () => { estado.mas = m; estado.daf = null; pintar(); } } },
-        h('b', null, m), h('div', { class: 'he' }, HE[m] || ''), h('small', null, dafs.length + ' dafim')));
+        h('b', null, m), h('div', { class: 'he' }, cat.masejtot[m].he || ''), h('small', null, etiq)));
     }
     return grid;
   }
   function vistaDafs(m) {
-    const dafs = Object.keys(cat.masejtot[m]).map(Number).sort((a, b) => a - b);
+    const dafs = Object.keys(cat.masejtot[m].dafim || {}).map(Number).sort((a, b) => a - b);
     const g = h('div', { class: 'oz-dafs' });
     for (const d of dafs) {
       const tiene = !!tablitaDe(m, d);
@@ -90,21 +92,39 @@
     return g;
   }
   function vistaDaf(m, d) {
-    const it = cat.masejtot[m][String(d)];
-    const id = 'shawat|' + m + '|' + d;
-    const panel = h('div', { class: 'oz-panel' },
-      h('h3', null, (HE[m] || m) + ' ' + gem(d) + '  ·  ' + m + ' ' + d + (it.duracion_seg ? '  (' + dur(it.duracion_seg) + ')' : '')));
-    const audio = h('audio', { controls: '', preload: 'none' });
-    (window.OtzarDescargas ? OtzarDescargas.srcPara(it.mp3, id) : Promise.resolve(it.mp3)).then(src => { audio.src = src; });
-    panel.appendChild(audio);
-    const row = h('div', { class: 'oz-row' });
-    const pdf = tablitaDe(m, d);
-    if (pdf) row.appendChild(h('a', { class: 'oz-btn', href: pdf, target: '_blank', rel: 'noopener' }, '📄 Tablita del daf'));
-    row.appendChild(h('a', { class: 'oz-btn sec', href: it.mp3, target: '_blank', rel: 'noopener' }, '🔗 mp3'));
-    if (window.OtzarDescargas) OtzarDescargas.boton(row, it.mp3, id);
-    panel.appendChild(row);
+    const it = dafObj(m, d);
+    const he = cat.masejtot[m].he || m;
+    const panel = h('div', { class: 'oz-panel' }, h('h3', null, he + ' ' + gem(d) + '  ·  ' + m + ' ' + d));
+    const fuentes = [
+      ['shawat',     '🎙 Jajam Moshé Shawat · Español'],
+      ['jabrutouch', '🇲🇽 Jabrutouch · Español'],
+      ['stefansky',  "🇺🇸 R' Eli Stefansky · English"],
+    ];
+    for (const [k, etiq] of fuentes) {
+      const f = it[k];
+      if (!f || !f.mp3) continue;
+      const id = k + '|' + m + '|' + d;
+      const caja = h('div', { class: 'oz-fuente' }, h('div', { class: 'oz-et' }, etiq + (f.dur ? '  (' + dur(f.dur) + ')' : '')));
+      const audio = h('audio', { controls: '', preload: 'none' });
+      (window.OtzarDescargas ? OtzarDescargas.srcPara(f.mp3, id) : Promise.resolve(f.mp3)).then(src => { audio.src = src; });
+      audio.addEventListener('error', () => { caja.style.display = 'none'; });
+      caja.appendChild(audio);
+      const row = h('div', { class: 'oz-row' });
+      if (window.OtzarDescargas) OtzarDescargas.boton(row, f.mp3, id);
+      row.appendChild(h('a', { class: 'oz-btn sec', href: f.mp3, target: '_blank', rel: 'noopener' }, '🔗 mp3'));
+      caja.appendChild(row);
+      panel.appendChild(caja);
+    }
+    if (it.wasserman && it.wasserman.spotify) {
+      panel.appendChild(h('div', { class: 'oz-fuente' }, h('div', { class: 'oz-et' }, '🇮🇱 הרב נפתלי וסרמן · עברית'),
+        h('div', { class: 'oz-row' }, h('a', { class: 'oz-btn', href: it.wasserman.spotify, target: '_blank', rel: 'noopener' }, '▶ Spotify'))));
+    }
+    const docs = h('div', { class: 'oz-row', style: 'margin-top:14px' });
+    if (it.pdf) docs.appendChild(h('a', { class: 'oz-btn', href: it.pdf, target: '_blank', rel: 'noopener' }, '📖 Guemará (PDF)'));
+    if (it.tablita) docs.appendChild(h('a', { class: 'oz-btn', href: it.tablita, target: '_blank', rel: 'noopener' }, '📄 Tablita del daf'));
+    panel.appendChild(docs);
     const nav = h('div', { class: 'oz-nav' });
-    const dafs = Object.keys(cat.masejtot[m]).map(Number).sort((a, b) => a - b);
+    const dafs = Object.keys(cat.masejtot[m].dafim || {}).map(Number).sort((a, b) => a - b);
     const i = dafs.indexOf(d);
     nav.appendChild(h('button', { class: 'oz-btn sec', on: { click: () => { if (i > 0) { estado.daf = dafs[i - 1]; pintar(); } } } }, '◀ ' + (i > 0 ? gem(dafs[i - 1]) : '')));
     nav.appendChild(h('button', { class: 'oz-btn sec', on: { click: () => { estado.daf = null; pintar(); } } }, 'Todos los dafim'));
@@ -117,7 +137,7 @@
     root.innerHTML = '';
     const top = h('div', { class: 'oz-top' });
     if (estado.mas) top.appendChild(h('button', { on: { click: () => { if (estado.daf != null) estado.daf = null; else estado.mas = null; pintar(); } } }, '◀'));
-    top.appendChild(h('h2', null, estado.mas ? (estado.mas + ' · ' + (HE[estado.mas] || '')) : 'Shas · Jajam Moshé Shawat'));
+    top.appendChild(h('h2', null, estado.mas ? (estado.mas + ' · ' + (cat.masejtot[estado.mas].he || '')) : 'Shas · Otzar HaTorah'));
     if (root.classList.contains('oz-full')) top.appendChild(h('button', { on: { click: () => { root.remove(); root = null; } } }, '✕'));
     root.appendChild(top);
     if (!estado.mas) {
@@ -126,7 +146,7 @@
       b.addEventListener('input', () => { const n = vistaMasejtot(b.value.trim().toLowerCase()); grid.replaceWith(n); grid = n; });
       root.appendChild(h('div', { style: 'padding:0 12px' }, b));
       root.appendChild(grid);
-      root.appendChild(h('div', { class: 'oz-msg' }, cat.total + ' shiurim · ' + Object.keys(cat.masejtot).length + ' masejtot · 📄 = con tablita'));
+      root.appendChild(h('div', { class: 'oz-msg' }, '🇲🇽 Jabrutouch · 🎙 Shawat · 🇺🇸 Stefansky · 🇮🇱 Wasserman · 📄 tablitas · 📖 Guemará'));
     } else if (estado.daf == null) {
       root.appendChild(vistaDafs(estado.mas));
     } else {
