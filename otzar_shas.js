@@ -48,9 +48,7 @@
   .oz-btn,.otzar-descarga{background:#0f2a4a;color:#fff;border:0;border-radius:10px;padding:10px 14px;font-size:14px;cursor:pointer;text-decoration:none}
   .oz-btn.sec{background:#e9eef5;color:#0f2a4a}.oz-nav{display:flex;gap:8px;padding:8px 12px}.oz-nav button{flex:1}
   .oz-msg{padding:14px;color:#5b6b7f;text-align:center}
-  .oz-fuente{border-top:1px solid #e6ecf3;padding:10px 0}.oz-et{font-weight:600;color:#0f2a4a;font-size:14px}
-  .oz-aviso{font-size:12px;color:#b45309;background:#fff7ed;border-radius:8px;padding:6px 8px;margin-top:6px}
-  .oz-pie{font-size:11px;color:#8a99ab;text-align:center;padding:10px}`;
+  .oz-fuente{border-top:1px solid #e6ecf3;padding:10px 0}.oz-et{font-weight:600;color:#0f2a4a;font-size:14px}`;
 
   let cat = null, tab = null, root = null, estado = { mas: null, daf: null };
 
@@ -109,7 +107,7 @@
       const caja = h('div', { class: 'oz-fuente' }, h('div', { class: 'oz-et' }, etiq + (f.dur ? '  (' + dur(f.dur) + ')' : '')));
       const audio = h('audio', { controls: '', preload: 'none' });
       (window.OtzarDescargas ? OtzarDescargas.srcPara(f.mp3, id) : Promise.resolve(f.mp3)).then(src => { audio.src = src; });
-      audio.addEventListener('error', () => { caja.appendChild(h('div', { class: 'oz-aviso' }, '⚠️ El audio no carga en esta red (filtro). Usa 🔗 mp3 o prueba con datos móviles.')); });
+      audio.addEventListener('error', () => { caja.style.display = 'none'; });
       caja.appendChild(audio);
       const row = h('div', { class: 'oz-row' });
       if (window.OtzarDescargas) OtzarDescargas.boton(row, f.mp3, id);
@@ -149,8 +147,6 @@
       root.appendChild(h('div', { style: 'padding:0 12px' }, b));
       root.appendChild(grid);
       root.appendChild(h('div', { class: 'oz-msg' }, '🇲🇽 Jabrutouch · 🎙 Shawat · 🇺🇸 Stefansky · 🇮🇱 Wasserman · 📄 tablitas · 📖 Guemará'));
-      let tD = 0, tS = 0, tT = 0, tE = 0; for (const m in cat.masejtot) { const dd = cat.masejtot[m].dafim || {}; for (const k in dd) { tD++; if (dd[k].shawat) tS++; if (dd[k].tablita) tT++; if (dd[k].stefansky) tE++; } }
-      root.appendChild(h('div', { class: 'oz-pie' }, 'módulo v3 · catálogo ' + (cat.actualizado || '') + ' · ' + tD + ' dafim · Shawat ' + tS + ' · Stefansky ' + tE + ' · tablitas ' + tT));
     } else if (estado.daf == null) {
       root.appendChild(vistaDafs(estado.mas));
     } else {
